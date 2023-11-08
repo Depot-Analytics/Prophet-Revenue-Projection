@@ -180,7 +180,7 @@ if "company_name" not in st.session_state:
     st.session_state.company_name = company_name
 
 
-## Dashboard GUI Begins Here
+# Dashboard GUI Begins Here
 
 # Create Streamlit app to display data and projections
 st.title("Meta Prophet Demo Dashboard")
@@ -222,7 +222,7 @@ elif demo_type == "Upload Data":
         st.stop()
 
 
-## Revenue Projection - Creating GUI for Prophet Parameters
+# Revenue Projection - Creating GUI for Prophet Parameters
 seasonality_mode = st.selectbox(
     "Select seasonality mode",
     ("additive", "multiplicative"),
