@@ -231,7 +231,7 @@ seasonality_mode = st.selectbox(
 weekly_seasonality = st.checkbox("Weekly seasonality", value=True)
 daily_seasonality = st.checkbox("Daily seasonality", value=False)
 confidence_interval = st.slider("Confidence Interval for the Predicted Range", 0.0, 1.0, 0.8)
-seasonality_prior_scale = st.number_input("Seasonality prior scale", value=16)
+seasonality_prior_scale = st.number_input("Seasonality prior scale", value=14)
 growth_type = st.selectbox(
     "Select growth type",
     ("linear", "logistic"),
