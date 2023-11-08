@@ -52,30 +52,13 @@ def get_access_token_expiration() -> Union[int, None]:
     return access_exp
 
 
-def get_refresh_token() -> Union[str, None]:
-
-    refresh_token = QB_TOKEN_SECRETS_DATA.get("refresh_token")
-    return refresh_token
-
-
-def get_access_token() -> Union[str, None]:
-    access_token = QB_TOKEN_SECRETS_DATA.get("access_token")
-    return access_token
-
-
-def get_company_id() -> Union[str, None]:
-    company_id = QB_TOKEN_SECRETS_DATA.get("company_id")
-    return company_id
-
-
-def to_base64(s):
-    """String to Base64"""
-    return base64.b64encode(bytes(s, "utf-8")).decode()
-
-
-
 def get_client():
-    # somewhere tokens is beingq deleted
+    """
+    get_client: used for refreshing tokens and creating a new client
+
+    returns:
+        QuickBooks client
+    """
     auth_client = AuthClient(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
@@ -88,18 +71,18 @@ def get_client():
     if QB_TOKEN_SECRETS_DATA is None:
         st.error("No token data found. Please contact caleb@depotanalytics.co to resolve this issue.")
 
-    refresh_token = get_refresh_token()
-    company_id = get_company_id()
+    refresh_token = QB_TOKEN_SECRETS_DATA.get("refresh_token")
+    company_id = QB_TOKEN_SECRETS_DATA.get("company_id")
     access_token_exp = get_access_token_expiration()
     refresh_token_exp = get_refresh_token_expiration()
 
     curr_time = time.time()
     if curr_time < access_token_exp:
         # access token still valid, refresh also valid
-        print("access_token valid")
+        print("Access token is valid")
     elif curr_time < refresh_token_exp and refresh_token is not None:
         # access token invalid, refresh valid
-        print("refresh token is valid")
+        print("Refresh token is valid")
         auth_client.refresh(refresh_token=refresh_token)
     else:
         # access & refresh are invalid
@@ -112,7 +95,6 @@ def get_client():
     )
 
     return client
-
 
 # Authenticate and connect to QuickBooks Online account
 if "qbo" not in st.session_state:
@@ -197,6 +179,9 @@ if "company_name" not in st.session_state:
     company_name = CompanyInfo.get(id=1, qb=qbo)
     st.session_state.company_name = company_name
 
+
+"""Dashboard GUI Begins Here"""
+
 # Create Streamlit app to display data and projections
 st.title("Meta Prophet Demo Dashboard")
 st.write("This dashboard uses the Meta Prophet package to project revenues for the next 2 years. Note that parameters are critical and must be tuned correctly to get meaningful projections.")
@@ -236,9 +221,8 @@ elif demo_type == "Upload Data":
         st.error("Please upload a CSV file with a column named 'y' that contains numeric values.")
         st.stop()
 
-# create a selectbox for various projection methods
-projection_method = "Prophet"
 
+"""Revenue Projection - Creating GUI for Prophet Parameters"""
 seasonality_mode = st.selectbox(
     "Select seasonality mode",
     ("additive", "multiplicative"),
@@ -246,7 +230,7 @@ seasonality_mode = st.selectbox(
 
 weekly_seasonality = st.checkbox("Weekly seasonality", value=True)
 daily_seasonality = st.checkbox("Daily seasonality", value=False)
-confidence_interval = st.slider("Confidence interval", 0.0, 1.0, 0.8)
+confidence_interval = st.slider("Confidence Interval for the Predicted Range", 0.0, 1.0, 0.8)
 seasonality_prior_scale = st.number_input("Seasonality prior scale", value=16)
 growth_type = st.selectbox(
     "Select growth type",
