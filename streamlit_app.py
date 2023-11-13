@@ -98,87 +98,92 @@ def get_client():
 
 # Authenticate and connect to QuickBooks Online account
 if "qbo" not in st.session_state:
-    qbo = get_client()
+    try:
+        qbo = get_client()
+    except Exception as e:
+        qbo = None
     st.session_state.qbo = qbo
 qbo = st.session_state.qbo
 
 # Query QuickBooks Online API to retrieve data
-if "customers" not in st.session_state:
-    customers = Customer.all(qb=qbo)
-    st.session_state.customers = pd.DataFrame.from_records(
-        [c.to_dict() for c in customers]
-    )
-df_customers = st.session_state.customers
+if qbo is not None:
+    if "customers" not in st.session_state:
+        customers = Customer.all(qb=qbo)
+        st.session_state.customers = pd.DataFrame.from_records(
+            [c.to_dict() for c in customers]
+        )
+    df_customers = st.session_state.customers
 
-if "sales" not in st.session_state:
-    sales = SalesReceipt.all(qb=qbo)
-    st.session_state.sales = pd.DataFrame.from_records([s.to_dict() for s in sales])
-df_sales = st.session_state.sales
-df_sales["Date"] = pd.to_datetime(df_sales["TxnDate"])
-df_sales.set_index("Date", inplace=True)
+    if "sales" not in st.session_state:
+        sales = SalesReceipt.all(qb=qbo)
+        st.session_state.sales = pd.DataFrame.from_records([s.to_dict() for s in sales])
+    df_sales = st.session_state.sales
+    df_sales["Date"] = pd.to_datetime(df_sales["TxnDate"])
+    df_sales.set_index("Date", inplace=True)
 
-if "invoices" not in st.session_state:
-    invoices = Invoice.all(qb=qbo)
-    st.session_state.invoices = pd.DataFrame.from_records(
-        [i.to_dict() for i in invoices]
-    )
-df_invoices = st.session_state.invoices
-df_invoices["Date"] = pd.to_datetime(df_invoices["TxnDate"])
-df_invoices.set_index("Date", inplace=True)
+    if "invoices" not in st.session_state:
+        invoices = Invoice.all(qb=qbo)
+        st.session_state.invoices = pd.DataFrame.from_records(
+            [i.to_dict() for i in invoices]
+        )
+    df_invoices = st.session_state.invoices
+    df_invoices["Date"] = pd.to_datetime(df_invoices["TxnDate"])
+    df_invoices.set_index("Date", inplace=True)
 
-if "deposits" not in st.session_state:
-    deposits = Deposit.all(qb=qbo)
-    st.session_state.deposits = pd.DataFrame.from_records(
-        [d.to_dict() for d in deposits]
-    )
-df_deposits = st.session_state.deposits
-df_deposits["Date"] = pd.to_datetime(df_deposits["TxnDate"])
-df_deposits.set_index("Date", inplace=True)
+    if "deposits" not in st.session_state:
+        deposits = Deposit.all(qb=qbo)
+        st.session_state.deposits = pd.DataFrame.from_records(
+            [d.to_dict() for d in deposits]
+        )
+    df_deposits = st.session_state.deposits
+    df_deposits["Date"] = pd.to_datetime(df_deposits["TxnDate"])
+    df_deposits.set_index("Date", inplace=True)
 
-# Project revenues for the next 2 years
-if "sales_revenues" not in st.session_state:
-    sales_revenues = (
-        df_sales["TotalAmt"].resample("M").sum()
-    )  # Monthly revenues from sales
-    st.session_state.sales_revenues = sales_revenues
-sales_revenues = st.session_state.sales_revenues
+    # Project revenues for the next 2 years
+    if "sales_revenues" not in st.session_state:
+        sales_revenues = (
+            df_sales["TotalAmt"].resample("M").sum()
+        )  # Monthly revenues from sales
+        st.session_state.sales_revenues = sales_revenues
+    sales_revenues = st.session_state.sales_revenues
 
-if "invoices_revenues" not in st.session_state:
-    invoices_revenues = (
-        df_invoices["TotalAmt"].resample("M").sum()
-    )  # Monthly revenues from invoices
-    st.session_state.invoices_revenues = invoices_revenues
-invoices_revenues = st.session_state.invoices_revenues
+    if "invoices_revenues" not in st.session_state:
+        invoices_revenues = (
+            df_invoices["TotalAmt"].resample("M").sum()
+        )  # Monthly revenues from invoices
+        st.session_state.invoices_revenues = invoices_revenues
+    invoices_revenues = st.session_state.invoices_revenues
 
-if "deposits_revenues" not in st.session_state:
-    deposits_revenues = (
-        df_deposits["TotalAmt"].resample("M").sum()
-    )  # Monthly revenues from deposits
-    st.session_state.deposits_revenues = deposits_revenues
-deposits_revenues = st.session_state.deposits_revenues
+    if "deposits_revenues" not in st.session_state:
+        deposits_revenues = (
+            df_deposits["TotalAmt"].resample("M").sum()
+        )  # Monthly revenues from deposits
+        st.session_state.deposits_revenues = deposits_revenues
+    deposits_revenues = st.session_state.deposits_revenues
 
-# combine sales and invoices TotalAmt and Date columns
-if "df_revenues" not in st.session_state:
-    df_revenues = pd.concat([df_invoices, df_sales, df_deposits])
-    st.session_state.df_revenues = df_revenues
-df_revenues = st.session_state.df_revenues
+    # combine sales and invoices TotalAmt and Date columns
+    if "df_revenues" not in st.session_state:
+        df_revenues = pd.concat([df_invoices, df_sales, df_deposits])
+        st.session_state.df_revenues = df_revenues
+    df_revenues = st.session_state.df_revenues
 
-if "revenues" not in st.session_state:
-    revenues = (
-        pd.concat([sales_revenues, invoices_revenues, deposits_revenues])
-        .groupby(level=0)
-        .sum()
-    )  # Combine revenues from sales and invoices
-    st.session_state.revenues = revenues
-revenues = pd.DataFrame(data=st.session_state.revenues.reset_index()).rename(
-        columns={"Date": "ds", "TotalAmt": "y"}
-    )
+    if "revenues" not in st.session_state:
+        revenues = (
+            pd.concat([sales_revenues, invoices_revenues, deposits_revenues])
+            .groupby(level=0)
+            .sum()
+        )  # Combine revenues from sales and invoices
+        st.session_state.revenues = revenues
+    revenues = pd.DataFrame(data=st.session_state.revenues.reset_index()).rename(
+            columns={"Date": "ds", "TotalAmt": "y"}
+        )
 
-# Get QB company file name
-if "company_name" not in st.session_state:
-    company_name = CompanyInfo.get(id=1, qb=qbo)
-    st.session_state.company_name = company_name
-
+    # Get QB company file name
+    if "company_name" not in st.session_state:
+        company_name = CompanyInfo.get(id=1, qb=qbo)
+        st.session_state.company_name = company_name
+else:
+    st.session_state.company_name = "Sample"
 
 # Dashboard GUI Begins Here
 
@@ -187,11 +192,21 @@ st.title("Meta Prophet Demo Dashboard")
 st.write("This dashboard uses the Meta Prophet package to project revenues for the next 2 years. Note that parameters are critical and must be tuned correctly to get meaningful projections.")
 st.write("Find more information about Meta Prophet for forecasting here: https://facebook.github.io/prophet/")
 
-demo_type = st.selectbox("Select Demo Type", ("Upload Data", "Quickbooks Sample Data"))
+if qbo is not None:
+    demo_type = st.selectbox("Select Demo Type", ("Upload Data", "Quickbooks Sample Data"))
+else:
+    demo_type = st.selectbox("Select Demo Type", ("Upload Data", "Sample Data"))
+
 if demo_type == "Upload Data":
     # write out the requirements for the CSV file
     st.write("Upload a CSV file with columns 'ds' and 'y' where 'ds' is a date and 'y' is a numeric value representing the total dollar value of a transaction. The dates can be in any order/months can be missing/etc...")
     st.session_state.uploaded_file = st.file_uploader("Upload CSV", type="csv")
+elif demo_type == "Sample Data":
+    st.write("### Sample Data Revenue Projection")
+    revenues = pd.read_csv("sample_data.csv")
+    revenues['ds'] = pd.to_datetime(revenues['ds'])
+    revenues['y'] = pd.to_numeric(revenues['y'])
+
 
 if demo_type == "Upload Data" and ("uploaded_file" not in st.session_state):
     st.stop()
@@ -207,6 +222,7 @@ if demo_type == "Quickbooks Sample Data":
 
     with st.expander("Previous Revenues (Monthly Sums)", expanded=False):
         st.write(revenues)
+
 elif demo_type == "Upload Data":
     st.write(f"### {st.session_state.uploaded_file.name}: Uploaded Data Revenue Projection")
     revenues = pd.read_csv(st.session_state.uploaded_file)
